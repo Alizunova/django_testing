@@ -33,8 +33,7 @@ class TestRoutes(TestCase):
         """Залогиненный пользователь может создать заметку."""
         response = self.author_client.post(self.url, data=self.form_data)
         self.assertRedirects(response, reverse('notes:success'))
-        note_count = Note.objects.count()
-        self.assertEqual(note_count, 1)
+        self.assertTrue(Note.objects.exists())
         new_note = Note.objects.get()
         self.assertEqual(new_note.title, self.form_data['title'])
         self.assertEqual(new_note.text, self.form_data['text'])
@@ -47,8 +46,7 @@ class TestRoutes(TestCase):
         login_url = reverse('users:login')
         redirect_url = f'{login_url}?next={self.url}'
         self.assertRedirects(response, redirect_url)
-        note_count = Note.objects.count()
-        self.assertEqual(note_count, 0)
+        self.assertFalse(Note.objects.exists())
 
     def test_not_unique_slug(self):
         """Невозможно создать две заметки с одинаковым slug."""
@@ -66,8 +64,7 @@ class TestRoutes(TestCase):
             'slug',
             errors=(self.note.slug + WARNING)
         )
-        note_count = Note.objects.count()
-        self.assertEqual(note_count, 1)
+        self.assertTrue(Note.objects.exists())
 
     def test_empty_slug(self):
         """
@@ -77,8 +74,7 @@ class TestRoutes(TestCase):
         self.form_data.pop('slug')
         response = self.author_client.post(self.url, self.form_data)
         self.assertRedirects(response, reverse('notes:success'))
-        note_count = Note.objects.count()
-        self.assertEqual(note_count, 1)
+        self.assertTrue(Note.objects.exists())
         new_note = Note.objects.get()
         expected_slug = slugify(self.form_data['title'])
         self.assertEqual(new_note.slug, expected_slug)
@@ -93,8 +89,7 @@ class TestRoutes(TestCase):
         url = reverse('notes:delete', args=(self.note.slug,))
         response = self.author_client.post(url)
         self.assertRedirects(response, reverse('notes:success'))
-        note_count = Note.objects.count()
-        self.assertEqual(note_count, 0)
+        self.assertFalse(Note.objects.exists())
 
     def test_other_user_cant_delete_note(self):
         """Пользователь не может удалять чужие заметки."""
@@ -106,8 +101,7 @@ class TestRoutes(TestCase):
         url = reverse('notes:delete', args=(self.note.slug,))
         response = self.reader_client.post(url)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-        note_count = Note.objects.count()
-        self.assertEqual(note_count, 1)
+        self.assertTrue(Note.objects.exists())
 
     def test_author_can_edit_note(self):
         """Пользователь может редактировать свои заметки."""

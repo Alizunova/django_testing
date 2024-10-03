@@ -17,7 +17,7 @@ def test_anonymous_user_cant_create_comment(client, form_data, news):
     """Анонимный пользователь не может отправить комментарий."""
     url = reverse('news:detail', args=(news.id,))
     client.post(url, data=form_data)
-    assert Comment.objects.count() == 0
+    assert not Comment.objects.exists()
 
 
 def test_user_can_create_comment(author_client, author, form_data,
@@ -25,7 +25,7 @@ def test_user_can_create_comment(author_client, author, form_data,
     """Авторизованный пользователь может отправить комментарий."""
     url = reverse('news:detail', args=(news.id,))
     author_client.post(url, data=form_data)
-    assert Comment.objects.count() == 1
+    assert Comment.objects.exists()
     comment = Comment.objects.get()
     assert comment.text == form_data['text']
     assert comment.news == news
@@ -46,8 +46,7 @@ def test_user_cant_use_bad_words(author_client, news):
         field='text',
         errors=WARNING
     )
-    comments_count = Comment.objects.count()
-    assert comments_count == 0
+    assert not Comment.objects.exists()
 
 
 def test_author_can_delete_comment(author_client, news, comment):
@@ -56,8 +55,7 @@ def test_author_can_delete_comment(author_client, news, comment):
     url_to_comments = reverse('news:delete', args=(comment.id,))
     response = author_client.delete(url_to_comments)
     assertRedirects(response, news_url + '#comments')
-    comments_count = Comment.objects.count()
-    assert comments_count == 0
+    assert not Comment.objects.exists()
 
 
 def test_user_cant_delete_comment_of_another_user(admin_client, comment):
@@ -65,8 +63,7 @@ def test_user_cant_delete_comment_of_another_user(admin_client, comment):
     comment_url = reverse('news:delete', args=(comment.id,))
     response = admin_client.delete(comment_url)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    comments_count = Comment.objects.count()
-    assert comments_count == 1
+    assert Comment.objects.exists()
 
 
 def test_author_can_edit_comment(author_client, form_data, news,
